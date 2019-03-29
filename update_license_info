@@ -1,7 +1,9 @@
 BASE=$(dirname $1)
-XMLFILE=$BASE/licenses.xml
-LISTFILE=$BASE/licenses.txt
-ARCHIVE=$BASE/licenses.tgz
+ABSBASE=$(cd $BASE && pwd)
+SRCDIR=${2:-$ABSBASE}
+XMLFILE=$ABSBASE/licenses.xml
+LISTFILE=$ABSBASE/licenses.txt
+ARCHIVE=$ABSBASE/licenses.tgz
 
 function print {
     cat <<EOF>>$XMLFILE
@@ -26,9 +28,7 @@ cat <<EOF>>$XMLFILE
   <dependencies>
 EOF
 
-if [[ "$2" ]]; then
-    cd $2
-fi
+cd $SRCDIR
 
 for m in $(awk '{print $2}' $1); do
     f=vendor/$(echo $m | awk -F ':' '{print $1}')
