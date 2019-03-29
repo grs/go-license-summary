@@ -1,0 +1,62 @@
+BASE=$(dirname $1)
+XMLFILE=$BASE/licenses.xml
+LISTFILE=$BASE/licenses.txt
+ARCHIVE=$BASE/licenses.tgz
+
+function print {
+    cat <<EOF>>$XMLFILE
+    <dependency>
+        <packageName>$1</packageName>
+        <version>$2</version>
+        <licenses>
+            <license>
+                <name>$3</name>
+                <url>./$4</url>
+            </license>
+        </licenses>
+    </dependency>
+EOF
+}
+
+rm $XMLFILE
+rm $LISTFILE
+cat <<EOF>>$XMLFILE
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<licenseSummary>
+  <dependencies>
+EOF
+
+if [[ "$2" ]]; then
+    cd $2
+fi
+
+for m in $(awk '{print $2}' $1); do
+    f=vendor/$(echo $m | awk -F ':' '{print $1}')
+    v=$(echo $m | awk -F ':' '{print $2}')
+    l=$(find "$f" -iname 'license*')
+    if [[ -z "$l" ]]; then
+        l=$(find "$f" -iname 'readme*')
+    fi
+    if [[ "$l" ]]; then
+        i=$(identify_license $l 2> /dev/null)
+        if [[ -z $i ]]; then
+            echo "$f Unrecognised $l"
+            print $f $v Unrecognised $l
+        else
+            n=$(echo $i | awk '{print $2}')
+            print $f $v $n $l
+        fi
+        echo $l >> $LISTFILE
+    else
+        echo "$f Unknown"
+        print $f $v Unknown
+    fi
+done
+
+cat <<EOF>>$XMLFILE
+  </dependencies>
+</licenseSummary>
+EOF
+
+rm $ARCHIVE
+tar -zcf $ARCHIVE LICENSE $(cat $LISTFILE)
